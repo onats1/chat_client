@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:grpc/grpc.dart';
 import 'package:fixnum/fixnum.dart';
 import '../../models/chat_message.dart';
@@ -16,10 +18,26 @@ class GrpcService {
   Stream<MessageModel> get messageStream => _messageController.stream;
   bool get isConnected => _isConnected;
 
+  String get _grpcHost {
+    if (kIsWeb) {
+      // Web platform uses window.location.hostname
+      return 'localhost';
+    } else if (Platform.isAndroid) {
+      // Android emulator can access host machine via 10.0.2.2
+      return '10.0.2.2';
+    } else if (Platform.isIOS) {
+      // iOS simulator can access host machine via localhost
+      return 'localhost';
+    } else {
+      // Default to localhost for other platforms
+      return 'localhost';
+    }
+  }
+
   Future<void> connect() async {
     try {
       _channel = ClientChannel(
-        'localhost',
+        _grpcHost,
         port: 50051,
         options: const ChannelOptions(
           credentials: ChannelCredentials.insecure(),

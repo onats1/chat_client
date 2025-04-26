@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
 import 'grpc/grpc_service.dart';
 import 'websocket/websocket_service.dart';
+import 'metrics/metrics_service.dart';
 
 enum ChatProtocol { grpc, websocket }
 
 class ChatProvider extends ChangeNotifier {
   final GrpcService _grpcService = GrpcService();
   final WebSocketService _webSocketService = WebSocketService();
+  final MetricsService _metricsService = MetricsService();
   
   ChatProtocol _currentProtocol = ChatProtocol.websocket;
   List<MessageModel> _messages = [];
@@ -19,6 +21,7 @@ class ChatProvider extends ChangeNotifier {
   List<MessageModel> get messages => _messages;
   bool get isConnected => _isConnected;
   String? get error => _error;
+  MetricsService get metricsService => _metricsService;
 
   ChatProvider() {
     _setupMessageListeners();
@@ -31,17 +34,35 @@ class ChatProvider extends ChangeNotifier {
 
   void _handleNewMessage(MessageModel message) {
     _messages.add(message);
+    
+    // Record metrics for received message
+    _metricsService.recordMessageReceived(
+      sentTime: message.timestamp,
+      receivedTime: DateTime.now(),
+      messageSize: message.content.length,
+      protocol: _currentProtocol == ChatProtocol.grpc ? 'grpc' : 'websocket',
+    );
+    
     notifyListeners();
   }
 
   Future<void> connect() async {
     try {
       _error = null;
+      final startTime = DateTime.now();
+      
       if (_currentProtocol == ChatProtocol.grpc) {
         await _grpcService.connect();
       } else {
         await _webSocketService.connect();
       }
+      
+      final connectionTime = DateTime.now().difference(startTime).inMilliseconds.toDouble();
+      _metricsService.recordConnection(
+        protocol: _currentProtocol == ChatProtocol.grpc ? 'grpc' : 'websocket',
+        connectionTime: connectionTime,
+      );
+      
       _isConnected = true;
       notifyListeners();
     } catch (e) {
@@ -61,6 +82,13 @@ class ChatProvider extends ChangeNotifier {
       isSelf: true,
     );
     _messages.add(message);
+
+    // Record metrics for sent message
+    _metricsService.recordMessageSent(
+      sentTime: message.timestamp,
+      messageSize: content.length,
+      protocol: _currentProtocol == ChatProtocol.grpc ? 'grpc' : 'websocket',
+    );
 
     if (_currentProtocol == ChatProtocol.grpc) {
       _grpcService.sendMessage(content);
@@ -87,6 +115,11 @@ class ChatProvider extends ChangeNotifier {
     } else {
       _webSocketService.disconnect();
     }
+    
+    _metricsService.recordDisconnection(
+      protocol: _currentProtocol == ChatProtocol.grpc ? 'grpc' : 'websocket',
+    );
+    
     _isConnected = false;
     notifyListeners();
   }

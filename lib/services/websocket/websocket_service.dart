@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../models/chat_message.dart';
 
@@ -11,10 +13,26 @@ class WebSocketService {
   Stream<MessageModel> get messageStream => _messageController.stream;
   bool get isConnected => _isConnected;
 
+  String get _websocketUrl {
+    if (kIsWeb) {
+      // Web platform uses window.location.hostname
+      return 'ws://localhost:8080';
+    } else if (Platform.isAndroid) {
+      // Android emulator can access host machine via 10.0.2.2
+      return 'ws://10.0.2.2:8080';
+    } else if (Platform.isIOS) {
+      // iOS simulator can access host machine via localhost
+      return 'ws://localhost:8080';
+    } else {
+      // Default to localhost for other platforms
+      return 'ws://localhost:8080';
+    }
+  }
+
   Future<void> connect() async {
     try {
       _channel = WebSocketChannel.connect(
-        Uri.parse('ws://10.0.2.2:8080'),
+        Uri.parse(_websocketUrl),
       );
 
       _isConnected = true;

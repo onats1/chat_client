@@ -6,6 +6,7 @@ import 'package:flutter_chat_bubble/clippers/chat_bubble_clipper_1.dart';
 import 'package:intl/intl.dart';
 import '../services/chat_provider.dart';
 import '../models/chat_message.dart';
+import '../components/metrics_dashboard.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -79,6 +80,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
+          const MetricsDashboard(),
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, provider, child) {
@@ -110,11 +112,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageBubble(MessageModel message) {
-    final timeStr = DateFormat('HH:mm').format(message.timestamp);
+    final isSystem = message.isSystem;
+    final isSelf = message.isSelf;
     
-    if (message.isSystem) {
+    if (isSystem) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Center(
           child: Text(
             message.content,
@@ -128,14 +131,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
-        crossAxisAlignment: message.isSelf
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
-            message.isSelf ? 'You' : message.userId,
+            message.userId,
             style: const TextStyle(
               fontSize: 12,
               color: Colors.grey,
@@ -143,39 +145,29 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: 4),
           ChatBubble(
-            clipper: ChatBubbleClipper1(
-              type: message.isSelf
-                  ? BubbleType.sendBubble
-                  : BubbleType.receiverBubble,
-            ),
-            alignment: message.isSelf
-                ? Alignment.topRight
-                : Alignment.topLeft,
+            clipper: ChatBubbleClipper1(type: isSelf ? BubbleType.sendBubble : BubbleType.receiverBubble),
+            alignment: isSelf ? Alignment.topRight : Alignment.topLeft,
             margin: const EdgeInsets.only(top: 4),
-            backGroundColor: message.isSelf
-                ? Theme.of(context).primaryColor
-                : Colors.grey[300],
+            backGroundColor: isSelf ? Colors.blue : Colors.grey[200],
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     message.content,
                     style: TextStyle(
-                      color: message.isSelf ? Colors.white : Colors.black,
+                      color: isSelf ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    timeStr,
+                    DateFormat('HH:mm').format(message.timestamp),
                     style: TextStyle(
                       fontSize: 10,
-                      color: message.isSelf
-                          ? Colors.white.withOpacity(0.7)
-                          : Colors.black54,
+                      color: isSelf ? Colors.white70 : Colors.grey,
                     ),
                   ),
                 ],
