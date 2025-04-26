@@ -19,17 +19,11 @@ class GrpcService {
   bool get isConnected => _isConnected;
 
   String get _grpcHost {
-    if (kIsWeb) {
-      // Web platform uses window.location.hostname
-      return 'localhost';
-    } else if (Platform.isAndroid) {
+    if (Platform.isAndroid) {
       // Android emulator can access host machine via 10.0.2.2
       return '10.0.2.2';
-    } else if (Platform.isIOS) {
-      // iOS simulator can access host machine via localhost
-      return 'localhost';
     } else {
-      // Default to localhost for other platforms
+      // iOS simulator can access host machine via localhost
       return 'localhost';
     }
   }

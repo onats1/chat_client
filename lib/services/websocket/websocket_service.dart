@@ -14,17 +14,11 @@ class WebSocketService {
   bool get isConnected => _isConnected;
 
   String get _websocketUrl {
-    if (kIsWeb) {
-      // Web platform uses window.location.hostname
-      return 'ws://localhost:8080';
-    } else if (Platform.isAndroid) {
+    if (Platform.isAndroid) {
       // Android emulator can access host machine via 10.0.2.2
       return 'ws://10.0.2.2:8080';
-    } else if (Platform.isIOS) {
-      // iOS simulator can access host machine via localhost
-      return 'ws://localhost:8080';
     } else {
-      // Default to localhost for other platforms
+      // iOS simulator can access host machine via localhost
       return 'ws://localhost:8080';
     }
   }
